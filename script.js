@@ -1340,6 +1340,124 @@ const FILMOGRAPHY_DATA = [
     },
     ];
 
+// countries json
+const wishCountries = [
+    { "name": "Singapore 🇸🇬", "code": "SG" },
+    { "name": "Malaysia 🇲🇾", "code": "MY" },
+    { "name": "United States (America) 🇺🇸", "code": "US" },
+    { "name": "Japan 🇯🇵", "code": "JP" },
+    { "name": "South Korea 🇰🇷", "code": "KR" },
+    { "name": "Thailand 🇹🇭", "code": "TH" },
+    { "name": "Indonesia 🇮🇩", "code": "ID" },
+    { "name": "Vietnam 🇻🇳", "code": "VN" },
+    { "name": "Germany 🇩🇪", "code": "DE" },
+    { "name": "France 🇫🇷", "code": "FR" },
+    { "name": "United Kingdom (UK) 🇬🇧", "code": "GB" },
+    { "name": "India 🇮🇳", "code": "IN" },
+    { "name": "United Arab Emirates (UAE) 🇦🇪", "code": "AE" },
+    { "name": "Australia 🇦🇺", "code": "AU" },
+    // This is the special entry for all others
+    { "name": "Rest of Other Countries 🌍", "code": "OTHERS" }
+];
+
+// Function to generate and display the Live Fan Histogram using Chart.js
+function plotFanHistogram() {
+    // --- 1. Retrieve and Parse Data from localStorage ---
+    const storageKey = 'rajiniBirthdayWishes2025';
+    const storedString = localStorage.getItem(storageKey);
+    let wishesData = {};
+
+    if (storedString) {
+        // localStorage stores strings, so we must parse the JSON back into a JavaScript object
+        try {
+            wishesData = JSON.parse(storedString);
+        } catch (e) {
+            console.error("Error parsing JSON from localStorage:", e);
+            return; // Exit if data is corrupted
+        }
+    }
+
+    // --- 2. Process and Sort Data for Chart.js ---
+    
+    // Convert the object into an array of [countryCode, count] pairs for sorting
+    const dataArray = Object.entries(wishesData);
+
+    // Filter out countries with 0 wishes and sort by count (descending)
+    dataArray.sort((a, b) => b[1] - a[1]); 
+
+    // Extract sorted labels (Country Codes) and data (Counts)
+    const labels = dataArray.map(item => item[0]);
+    const counts = dataArray.map(item => item[1]);
+
+    // Update the total count displayed on the page
+    const totalWishes = counts.reduce((sum, current) => sum + current, 0);
+    const totalCountElement = document.getElementById('birthday-total-count');
+    if (totalCountElement) {
+        totalCountElement.textContent = totalWishes.toLocaleString();
+    }
+
+
+    // --- 3. Initialize and Render the Chart ---
+    
+    const ctx = document.getElementById('birthday-country-chart').getContext('2d');
+    
+    // Check if a chart instance already exists (to prevent redraw errors on updates)
+    if (window.countryChart instanceof Chart) {
+        window.countryChart.destroy();
+    }
+
+    // Create the new Chart.js instance (a Horizontal Bar Chart works well for histograms)
+    window.countryChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Wishes Sent',
+                data: counts,
+                backgroundColor: 'rgba(230, 0, 51, 0.8)', // Rajini's color/style
+                borderColor: 'rgba(200, 0, 40, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y', // Makes it a horizontal bar chart
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Wishes'
+                    }
+                },
+                y: {
+                    // Set bar thickness if you have many countries
+                    barPercentage: 0.9, 
+                    categoryPercentage: 0.9
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false // Hide the legend since there is only one dataset
+                },
+                title: {
+                    display: false 
+                }
+            }
+        }
+    });
+}
+
+// Check if a chart instance already exists (to prevent redraw errors on updates)
+if (window.countryChart instanceof Chart) {
+    window.countryChart.destroy();
+}
+
+// Ensure the plot function runs when the page loads
+document.addEventListener('DOMContentLoaded', plotFanHistogram);
+
+
 // Dialogues
 const DIALOGUES_DATA = [
     { text: "Naan oru thadava sonna, nooru thadava sonna madhiri. ரஜினி வசனம்| நான் ஒரு தடவை சொன்னா 100ரு தடவை சொன்ன மாதிரி", movie: "Baashha", Link: "https://www.youtube.com/shorts/8oDFULMAwEA" },
@@ -1585,36 +1703,57 @@ function bdayUpdateTotalDisplay() {
     birthdayTotalCountEl.textContent = bdayTotalCount();
 }
 
+// Function to Populate the Dropdown ---
+function populateCountrySelect() {
+    const selectElement = document.getElementById('birthday-country-select');
+    
+    // Clear any existing options (except the first placeholder)
+    // The loop starts at 1 to skip the placeholder option: <option value="">🌐 Select your country</option>
+    for (let i = selectElement.options.length - 1; i >= 1; i--) {
+        selectElement.remove(i);
+    }
+    
+    // Loop through the JSON array and create an option for each country
+    wishCountries.forEach(country => {
+        const option = document.createElement('option');
+        option.value = country.code; // The value will be the country code (e.g., 'SG', 'IN')
+        option.textContent = country.name; // The visible text
+        
+        selectElement.appendChild(option);
+    });
+}
 // Populate country dropdown
-async function populateCountrySelect() {
-    const select = document.getElementById('countrySelect');
-    try {
-        const res = await fetch(REGIONS_API);
-        const data = await res.json();
+//async function populateCountrySelect() {
+//    const select = document.getElementById('countrySelect');
+ //   try {
+ //       const res = await fetch(REGIONS_API);
+ //       const data = await res.json();
 
         // Extract unique, non-empty regions
-        const regionSet = new Set();
-        data.forEach(item => {
-            if (item.region) {
-                regionSet.add(item.region);
-            }
-        });
+ //       const regionSet = new Set();
+//     data.forEach(item => {
+//          if (item.region) {
+//              regionSet.add(item.region);
+//          }
+//      });
 
-        const regions = Array.from(regionSet).sort();
-
-        regions.forEach(region => {
-            const opt = document.createElement('option');
-            opt.value = region;              // value is region name, e.g. "Asia"
-            opt.textContent = `${getRegionIcon(region)} ${region}`;
-            select.appendChild(opt);
-        });
-    } catch (e) {
-        console.error('Error fetching regions', e);
-        showStatus('Could not load region list. Please check your internet connection.', true);
-    }
-}
+  //      const regions = Array.from(regionSet).sort();
+//
+ //       regions.forEach(region => {
+ //           const opt = document.createElement('option');
+ //           opt.value = region;              // value is region name, e.g. "Asia"
+ //           opt.textContent = `${getRegionIcon(region)} ${region}`;
+ //           select.appendChild(opt);
+ //       });
+  //  } catch (e) {
+ //       console.error('Error fetching regions', e);
+ //       showStatus('Could not load region list. Please check your internet connection.', true);
+ //   }
+//}
 
 // Form handling
+
+
 function bdaySetupForm() {
     if (!birthdayForm || !birthdayCountrySelect || !birthdayWishButton) return;
 
@@ -1633,7 +1772,9 @@ function bdaySetupForm() {
         birthdayCounters[countryCode] = (birthdayCounters[countryCode] || 0) + 1;
         bdaySaveCounters();
         bdayUpdateTotalDisplay();
-        bdayUpdateChart();
+        //bdayUpdateChart();
+
+        plotFanHistogram();
 
         bdayShowStatus('Thank you! Your wishes have been recorded. 💛', false);
 
@@ -1650,10 +1791,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Birthday wishes init
     bdayLoadCounters();
     bdayUpdateTotalDisplay();
-    bdayInitChart();
+    //bdayInitChart();
     bdayUpdateChart();
     populateCountrySelect();
     bdaySetupForm();
+    populateCountrySelect();
 });
 
 // 1. Navigation – core for ALL FOUR TABS
